@@ -1,12 +1,19 @@
 const DIMENSIONS: usize = 100;
 const PRECISION: usize = 1000;
 fn main() {
-    println!("Hello, world!");
+    let mut buf = ScreenBuf::new();
+
+    let a = Point::new(0.0, 0.0);
+    let b = Point::new(3.14, 2.72);
+
+    buf.draw_horizontal_line(a, b);
+
+    println!("{:?}", buf.buf)
 }
 
 /// A struct representing the screen buffer
 struct ScreenBuf {
-    buf: [usize; (DIMENSIONS * DIMENSIONS)],
+    pub buf: [usize; (DIMENSIONS * DIMENSIONS)],
 }
 
 impl ScreenBuf {
@@ -23,7 +30,7 @@ impl ScreenBuf {
         let dx = a.distance_x(&b) / PRECISION as f64;
         let dy = a.distance_y(&b) / PRECISION as f64;
 
-        for i in 0..PRECISION {
+        for _ in 0..PRECISION {
 
             self.set_pixel(current_point.x, current_point.y);
         
@@ -35,7 +42,7 @@ impl ScreenBuf {
     }
 
     fn set_pixel(&mut self, x: f64, y: f64) {
-        let point = self.map_point(x.round() as i32, x.round() as i32);
+        let point = self.map_point(x.round() as i32, y.round() as i32);
 
         // Convert the point into an index
         let index = point.0 + DIMENSIONS * point.1;
