@@ -3,9 +3,11 @@ use std::path::Path;
 use anyhow::Result;
 
 use image::{ImageBuffer, Rgb, RgbImage};
+use num_complex::Complex64;
 
 const DIM: u32 = 20;
 type ReFunc = fn(f64) -> f64;
+type ReZFunc = fn(f64) -> Complex64;
 
 pub struct Grapher {
     center: Point,
@@ -20,7 +22,7 @@ impl Grapher {
         }
     }
 
-    pub fn draw_func(&mut self, f: ReFunc) {
+    pub fn draw_re_func(&mut self, f: ReFunc) {
 
         let a = self.center.x - DIM as f64;
         let b = self.center.x + DIM as f64;
@@ -31,6 +33,23 @@ impl Grapher {
 
         for x in sample_points {
             self.buf.set_pixel(x, f(x));
+        }
+    }
+
+    pub fn draw_re_z_func(&mut self, f: ReZFunc) {
+
+        let a = self.center.x - DIM as f64;
+        let b = self.center.x + DIM as f64;
+
+        let sample_points: Vec<f64> = (0..(PRECISION as f64).round() as i32).map(|x| {
+            a + x as f64 * (b - a) / PRECISION as f64
+        }).collect();
+
+        for r in sample_points {
+
+            let z = f(r);
+
+            self.buf.set_pixel(z.re, z.im);
         }
     }
 
