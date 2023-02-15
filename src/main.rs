@@ -16,9 +16,9 @@ fn main() -> anyhow::Result<()> {
 
     grapher.draw_re_z_func(f);
 
-    grapher.save()
+    grapher.run(f)
 }
 
 fn f(x: f64) -> Complex64 {
-    x.sin()* I
+    x.cos() * I + x.sin()
 }
