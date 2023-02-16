@@ -1,11 +1,10 @@
 use std::path::Path;
 
-use num_complex::{Complex64, Complex};
+use num_complex::{Complex, Complex64};
 
-mod point;
 mod grapher;
+mod point;
 
-const DIMENSIONS: u32 = 100;
 const PRECISION: usize = 1000;
 
 const I: Complex64 = Complex::new(0.0, 1.0);
@@ -20,5 +19,5 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn f(x: f64) -> Complex64 {
-    x.cos() * I + x.sin()
+    x.cos() + I * x.sin()
 }
