@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::{path::Path, f64::consts::E};
 
-use num_complex::{Complex, Complex64};
+use num_complex::{Complex, Complex64, ComplexFloat};
 
 mod grapher;
 mod point;
@@ -19,5 +19,5 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn f(x: f64) -> Complex64 {
-    x.sin().into()
+    x * I + x
 }
