@@ -29,6 +29,7 @@ impl Grapher {
 
     /// Updates the plot
     pub fn update_plot(&mut self, f: ReImFunc) -> anyhow::Result<()> {
+        self.buf.buf.fill(255);
         self.draw_re_z_func(f);
 
         if self.axis_enabled {
@@ -67,7 +68,10 @@ impl Grapher {
     }
 
     fn set_pixel(&mut self, x: f64, y: f64) {
-        let point = self.map_point(x.round() as i32 + DIM as i32, y.round() as i32 + DIM as i32);
+        let point = self.map_point(
+            (x - self.center.x).round() as i32,
+            (y - self.center.y).round() as i32,
+        );
 
         if point.0 < DIM && point.1 < DIM {
             self.buf.buf.put_pixel(point.0, point.1, Rgb([0, 0, 0]));
@@ -78,10 +82,7 @@ impl Grapher {
     /// of the screen
     fn map_point(&self, x: i32, y: i32) -> (u32, u32) {
         // Shifts the x coordinate 50 pixels to the left and flips the y coordinate around and shifts it up by 50 pixels as well
-        (
-            (x + (DIM / 2) as i32) as u32,
-            (-y + (DIM / 2) as i32) as u32,
-        )
+        ((x + DIM as i32) as u32, (-y + DIM as i32) as u32)
     }
 
     pub fn draw_axes(&mut self) {
@@ -118,17 +119,16 @@ impl Grapher {
                         self.zoom_factor *= 2.0;
                         self.center.x *= 2.0;
                         self.center.y *= 2.0;
-                        println!("{}", self.zoom_factor);
                     }
                     'x' => {
                         self.zoom_factor /= 2.0;
                         self.center.x /= 2.0;
                         self.center.y /= 2.0;
                     }
-                    'w' => self.center.y += 10.0,
-                    'a' => self.center.x -= 10.0,
-                    's' => self.center.y -= 10.0,
-                    'd' => self.center.x += 10.0,
+                    'w' => self.center.y += 1.0,
+                    'a' => self.center.x -= 1.0,
+                    's' => self.center.y -= 1.0,
+                    'd' => self.center.x += 1.0,
                     'e' => self.axis_enabled = !self.axis_enabled,
                     'r' => {
                         self.zoom_factor = 1.0;
@@ -191,12 +191,8 @@ impl ScreenBuf {
     // }
 
     fn write(&self, path: &Path) -> Result<()> {
-        let img_buf = RgbImage::from_raw(DIM, DIM, self.buf.clone().to_vec());
-
-        img_buf
-            .unwrap()
-            .save_with_format(path, image::ImageFormat::Png)?;
-
-        Ok(())
+        self.buf
+            .save_with_format(path, image::ImageFormat::Png)
+            .map_err(|err| err.into())
     }
 }
