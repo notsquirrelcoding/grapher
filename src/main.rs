@@ -19,5 +19,5 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn f(x: f64) -> Complex64 {
-    x.cos() + I * x.sin()
+    x.sin().into()
 }

@@ -6,7 +6,7 @@ use console::Term;
 use image::{ImageBuffer, Rgb, RgbImage};
 use num_complex::{Complex, Complex64};
 
-const DIM: u32 = 20;
+const DIM: u32 = 50;
 type ReFunc = fn(f64) -> f64;
 type ReImFunc = fn(f64) -> Complex64;
 
@@ -54,14 +54,15 @@ impl Grapher {
     }
 
     pub fn draw_re_z_func(&mut self, f: ReImFunc) {
-        let a = self.center.x - DIM as f64;
+        let a = self.center.x / self.zoom_factor;
 
         let sample_points: Vec<f64> = (0..(PRECISION as f64).round() as i32)
-            .map(|x| a + x as f64 * DIM as f64 / PRECISION as f64)
+            .map(|x| a + x as f64 * (DIM as f64 / PRECISION as f64))
             .collect();
 
+
         for r in sample_points {
-            let z = f(r);
+            let z = f(r / self.zoom_factor);
 
             self.set_pixel(z.re, z.im);
         }
@@ -69,8 +70,8 @@ impl Grapher {
 
     fn set_pixel(&mut self, x: f64, y: f64) {
         let point = self.map_point(
-            (x - self.center.x).round() as i32,
-            (y - self.center.y).round() as i32,
+            (x / self.zoom_factor - self.center.x).round() as i32,
+            (y / self.zoom_factor - self.center.y).round() as i32,
         );
 
         if point.0 < DIM && point.1 < DIM {
@@ -115,15 +116,14 @@ impl Grapher {
         loop {
             if let Ok(character) = stdout.read_char() {
                 match character {
+
+
+                    // For some reason you have to divide to zoom and multiply to zoom out.
                     'z' => {
-                        self.zoom_factor *= 2.0;
-                        self.center.x *= 2.0;
-                        self.center.y *= 2.0;
+                        self.zoom_factor /= 2.0;
                     }
                     'x' => {
-                        self.zoom_factor /= 2.0;
-                        self.center.x /= 2.0;
-                        self.center.y /= 2.0;
+                        self.zoom_factor *= 2.0;
                     }
                     'w' => self.center.y += 1.0,
                     'a' => self.center.x -= 1.0,
