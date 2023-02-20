@@ -4,7 +4,7 @@ use std::path::Path;
 
 use console::Term;
 use image::{ImageBuffer, Rgb, RgbImage};
-use num_complex::{Complex, Complex64};
+use num_complex::Complex64;
 
 const DIM: u32 = 50;
 type ReFunc = fn(f64) -> f64;
@@ -18,10 +18,10 @@ pub struct Grapher {
 }
 
 impl Grapher {
-    pub fn new(file: &Path) -> Self {
+    pub fn new(_file: &Path) -> Self {
         Self {
             center: Point::new(0.0, 0.0),
-            buf: ScreenBuf::new(100, file),
+            buf: ScreenBuf::new(),
             zoom_factor: 1.0,
             axis_enabled: false,
         }
@@ -44,8 +44,8 @@ impl Grapher {
         let a = self.center.x - DIM as f64;
         let b = self.center.x + DIM as f64;
 
-        let sample_points: Vec<f64> = (0..(PRECISION as f64).round() as i32)
-            .map(|x| a + x as f64 * (b - a) / PRECISION as f64)
+        let sample_points: Vec<f64> = (0..PRECISION as i32)
+            .map(|x| a + x as f64 * (b - a) / PRECISION)
             .collect();
 
         for x in sample_points {
@@ -54,36 +54,66 @@ impl Grapher {
     }
 
     pub fn draw_re_z_func(&mut self, f: ReImFunc) {
-        let a = self.center.x / self.zoom_factor;
+        let start = self.center.x - DIM as f64 / self.zoom_factor;
+        let end = self.center.x + DIM as f64 / self.zoom_factor;
 
-        let sample_points: Vec<f64> = (0..(PRECISION as f64).round() as i32)
-            .map(|x| a + x as f64 * (DIM as f64 / PRECISION as f64))
+        let dx = (end - start) / PRECISION;
+
+        let sample_points: Vec<f64> = (0..(PRECISION as i32))
+            .map(|i| start + i as f64 * dx)
             .collect();
 
 
-        for r in sample_points {
-            let z = f(r / self.zoom_factor);
 
-            self.set_pixel(z.re, z.im);
+        let first = f(sample_points.first().unwrap().clone());
+        let mut prev = Point::new(first.re, first.im);
+
+        for r in sample_points {
+            
+            let z = f(r);
+            let curr = Point::new(z.re, z.im);
+            // self.set_pixel(z.re, z.im);
+
+            self.draw_line(prev, Point::new(z.re, z.im));
+
+            prev = curr;
         }
     }
 
     fn set_pixel(&mut self, x: f64, y: f64) {
-        let point = self.map_point(
-            (x / self.zoom_factor - self.center.x).round() as i32,
-            (y / self.zoom_factor - self.center.y).round() as i32,
-        );
+        let point = self.map_point(x, y);
 
-        if point.0 < DIM && point.1 < DIM {
+        if point.0 < 2 * DIM && point.1 < 2 * DIM {
             self.buf.buf.put_pixel(point.0, point.1, Rgb([0, 0, 0]));
+        }
+    }
+
+    pub fn draw_line(&mut self, a: Point, b: Point) {
+        let mut current_point = a.clone();
+
+        let dx = a.distance_x(&b) / PRECISION;
+        let dy = a.distance_y(&b) / PRECISION;
+
+        let black_pixel = Rgb([0, 0, 0]);
+
+        for _ in 0..(PRECISION as i32) {
+            self.set_pixel(current_point.x, current_point.y);
+
+            current_point.x += dx;
+            current_point.y += dy;
         }
     }
 
     /// Maps a point from the coordinate system where `(0, 0)` is the center to the system where `(0, 0)` is the top-left corner
     /// of the screen
-    fn map_point(&self, x: i32, y: i32) -> (u32, u32) {
-        // Shifts the x coordinate 50 pixels to the left and flips the y coordinate around and shifts it up by 50 pixels as well
-        ((x + DIM as i32) as u32, (-y + DIM as i32) as u32)
+    fn map_point(&self, x: f64, y: f64) -> (u32, u32) {
+        // Unzoom
+        let nx = ((x - self.center.x) * self.zoom_factor).round() + DIM as f64;
+        let ny = DIM as f64 - ((y - self.center.y) * self.zoom_factor).round();
+
+        // println!("({x}, {y}) -> ({nx} {ny})");
+
+        (nx.round() as u32, (ny -1.0).round() as u32)
     }
 
     pub fn draw_axes(&mut self) {
@@ -91,22 +121,22 @@ impl Grapher {
 
         let tick_space = 5;
 
-        for y in 0..DIM {
+        for y in 0..(2 * DIM) {
             if y % tick_space == 0 {
-                self.buf.buf.put_pixel((DIM / 2) + 1, y, black_pixel);
-                self.buf.buf.put_pixel((DIM / 2) - 1, y, black_pixel);
+                self.buf.buf.put_pixel((DIM) + 1, y, black_pixel);
+                self.buf.buf.put_pixel((DIM) - 1, y, black_pixel);
             }
 
-            self.buf.buf.put_pixel(DIM / 2, y, black_pixel);
+            self.buf.buf.put_pixel(DIM, y, black_pixel);
         }
 
-        for x in 0..DIM {
+        for x in 0..(2 * DIM) {
             if x % tick_space == 0 {
-                self.buf.buf.put_pixel(x, (DIM / 2) + 1, black_pixel);
-                self.buf.buf.put_pixel(x, (DIM / 2) - 1, black_pixel);
+                self.buf.buf.put_pixel(x, (DIM) + 1, black_pixel);
+                self.buf.buf.put_pixel(x, (DIM) - 1, black_pixel);
             }
 
-            self.buf.buf.put_pixel(x, DIM / 2, black_pixel);
+            self.buf.buf.put_pixel(x, DIM, black_pixel);
         }
     }
 
@@ -116,19 +146,16 @@ impl Grapher {
         loop {
             if let Ok(character) = stdout.read_char() {
                 match character {
-
-
-                    // For some reason you have to divide to zoom and multiply to zoom out.
                     'z' => {
-                        self.zoom_factor /= 2.0;
-                    }
-                    'x' => {
                         self.zoom_factor *= 2.0;
                     }
-                    'w' => self.center.y += 1.0,
-                    'a' => self.center.x -= 1.0,
-                    's' => self.center.y -= 1.0,
-                    'd' => self.center.x += 1.0,
+                    'x' => {
+                        self.zoom_factor /= 2.0;
+                    }
+                    'w' => self.center.y += 1.0 / self.zoom_factor,
+                    'a' => self.center.x -= 1.0 / self.zoom_factor,
+                    's' => self.center.y -= 1.0 / self.zoom_factor,
+                    'd' => self.center.x += 1.0 / self.zoom_factor,
                     'e' => self.axis_enabled = !self.axis_enabled,
                     'r' => {
                         self.zoom_factor = 1.0;
@@ -156,39 +183,21 @@ impl Grapher {
 }
 
 /// A struct representing the screen buffer
+#[derive(Debug)]
 struct ScreenBuf {
     buf: ImageBuffer<Rgb<u8>, Vec<u8>>,
-    precision: usize,
     // file: Path,
 }
 
 impl ScreenBuf {
-    fn new(precision: usize, file: &Path) -> Self {
-        let mut buf = RgbImage::new(DIM, DIM);
+    fn new() -> Self {
+        let mut buf = RgbImage::new(2 * DIM, 2 * DIM);
 
         buf.fill(255);
 
-        Self {
-            buf,
-            precision, // file: *file.clone()
-        }
+        Self { buf }
     }
 
-    // fn draw_horizontal_line(&mut self, a: Point, b: Point) {
-    //     let mut current_point = a.clone();
-
-    //     let dx = a.distance_x(&b) / self.precision as f64;
-    //     let dy = a.distance_y(&b) / self.precision as f64;
-
-    //     let black_pixel = Rgb([0, 0, 0]);
-
-    //     for _ in 0..self.precision {
-    //         self.buf.put_pixel(current_point.x.r, current_point.y, black_pixel);
-
-    //         current_point.x += dx;
-    //         current_point.y += dy;
-    //     }
-    // }
 
     fn write(&self, path: &Path) -> Result<()> {
         self.buf
