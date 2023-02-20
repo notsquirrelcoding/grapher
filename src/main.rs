@@ -5,7 +5,9 @@ use num_complex::{Complex, Complex64, ComplexFloat};
 mod grapher;
 mod point;
 
-const PRECISION: f64 = 100.0;
+const PHI: f64 = 1.61803399;
+
+const PRECISION: f64 = 1000.0;
 
 const I: Complex64 = Complex::new(0.0, 1.0);
 
@@ -19,5 +21,5 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn f(x: f64) -> Complex64 {
-    Complex::new(x, x.sin())
+    (1.0 - I) * (PHI * I).powf(x)
 }

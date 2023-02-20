@@ -152,10 +152,10 @@ impl Grapher {
                     'x' => {
                         self.zoom_factor /= 2.0;
                     }
-                    'w' => self.center.y += 1.0 / self.zoom_factor,
-                    'a' => self.center.x -= 1.0 / self.zoom_factor,
-                    's' => self.center.y -= 1.0 / self.zoom_factor,
-                    'd' => self.center.x += 1.0 / self.zoom_factor,
+                    'w' => self.center.y += 10.0 / self.zoom_factor,
+                    'a' => self.center.x -= 10.0 / self.zoom_factor,
+                    's' => self.center.y -= 10.0 / self.zoom_factor,
+                    'd' => self.center.x += 10.0 / self.zoom_factor,
                     'e' => self.axis_enabled = !self.axis_enabled,
                     'r' => {
                         self.zoom_factor = 1.0;
