@@ -57,20 +57,27 @@ impl Grapher {
         let start = self.center.x - DIM as f64 / self.zoom_factor;
         let end = self.center.x + DIM as f64 / self.zoom_factor;
 
-        let dx = (end - start) / PRECISION;
+        let dx = 0.1;
 
-        let sample_points: Vec<f64> = (0..(PRECISION as i32))
-            .map(|i| start + i as f64 * dx)
-            .collect();
+        let sample_points: Vec<f64> = (0..(PRECISION as i32)).map(|i| i as f64 * dx).collect();
 
-
+        println!(
+            "rendering points on ({}, {})",
+            sample_points.first().unwrap(),
+            sample_points.last().unwrap()
+        );
 
         let first = f(sample_points.first().unwrap().clone());
+
+        // println!("Rendering points on [{}, {}]", sample_points.first().unwrap(), sample_points.last().unwrap());
+
         let mut prev = Point::new(first.re, first.im);
 
+        // let outs: Vec<Complex64> = sample_points.iter().map(|z| f(*z) ).collect();
+
         for r in sample_points {
-            
             let z = f(r);
+
             let curr = Point::new(z.re, z.im);
             // self.set_pixel(z.re, z.im);
 
@@ -80,26 +87,31 @@ impl Grapher {
         }
     }
 
-    fn set_pixel(&mut self, x: f64, y: f64) {
+    pub fn set_pixel(&mut self, x: f64, y: f64) {
+        // println!("({x}, {y})");
         let point = self.map_point(x, y);
 
-        if point.0 < 2 * DIM && point.1 < 2 * DIM {
+        if point.0 < 2 * DIM && point.0 > 0 && point.1 < 2 * DIM && point.1 > 0 {
             self.buf.buf.put_pixel(point.0, point.1, Rgb([0, 0, 0]));
         }
     }
 
     pub fn draw_line(&mut self, a: Point, b: Point) {
-        let mut current_point = a.clone();
+        let mut current_point = {
+            if a.x < b.x {
+                a.clone()
+            } else {
+                b.clone()
+            }
+        };
 
         let dx = a.distance_x(&b) / PRECISION;
         let dy = a.distance_y(&b) / PRECISION;
 
-        let black_pixel = Rgb([0, 0, 0]);
-
         for _ in 0..(PRECISION as i32) {
             self.set_pixel(current_point.x, current_point.y);
 
-            current_point.x += dx;
+            current_point.x -= dx;
             current_point.y += dy;
         }
     }
@@ -111,9 +123,7 @@ impl Grapher {
         let nx = ((x - self.center.x) * self.zoom_factor).round() + DIM as f64;
         let ny = DIM as f64 - ((y - self.center.y) * self.zoom_factor).round();
 
-        // println!("({x}, {y}) -> ({nx} {ny})");
-
-        (nx.round() as u32, (ny -1.0).round() as u32)
+        (nx.round() as u32, ny.round() as u32)
     }
 
     pub fn draw_axes(&mut self) {
@@ -171,6 +181,16 @@ impl Grapher {
                     "ZOOM: {}\tCENTER (z): ({}, {})\t \tAXIS ENABLED: {}",
                     self.zoom_factor, self.center.x, self.center.y, self.axis_enabled
                 );
+                println!(
+                    "Screen range (X): ({}, {})",
+                    self.center.x - DIM as f64 / self.zoom_factor,
+                    self.center.x + DIM as f64 / self.zoom_factor
+                );
+                println!(
+                    "Screen range (Y): ({}, {})",
+                    self.center.y - DIM as f64 / self.zoom_factor,
+                    self.center.y + DIM as f64 / self.zoom_factor
+                );
             }
         }
 
@@ -197,7 +217,6 @@ impl ScreenBuf {
 
         Self { buf }
     }
-
 
     fn write(&self, path: &Path) -> Result<()> {
         self.buf
