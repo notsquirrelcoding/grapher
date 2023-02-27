@@ -18,7 +18,7 @@ fn main() -> anyhow::Result<()> {
 
     // grapher.run(f)?;
 
-    grapher.draw_line(Point::new(0.0, 0.0), Point::new(-10.0, 10.0));
+    grapher.draw_line(Point::new(0.0, 0.0), Point::new(10.0, 10.0));
     grapher.set_pixel(0.0, 0.0);
     grapher.save()?;
 

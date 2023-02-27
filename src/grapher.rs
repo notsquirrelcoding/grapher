@@ -111,7 +111,7 @@ impl Grapher {
         for _ in 0..(PRECISION as i32) {
             self.set_pixel(current_point.x, current_point.y);
 
-            current_point.x -= dx;
+            current_point.x += -dx;
             current_point.y += dy;
         }
     }
